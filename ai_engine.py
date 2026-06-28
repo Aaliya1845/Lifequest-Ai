@@ -1,95 +1,105 @@
 """
 LifeQuest AI
-AI Game Master Engine
+Universal AI Engine
 """
 
 import os
+import random
 import json
 
-import google.generativeai as genai
+from scenarios import SCENARIOS
+
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except Exception:
+    GEMINI_AVAILABLE = False
 
 
-class AIGameMaster:
-    """
-    Generates dynamic game scenarios using Gemini.
-    """
+class AIEngine:
 
-    def __init__(self, api_key=None):
+    def __init__(self):
 
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.api_key = os.getenv("GEMINI_API_KEY")
 
-        if not self.api_key:
-            raise ValueError("Missing GEMINI_API_KEY")
+        self.available = False
 
-        genai.configure(api_key=self.api_key)
+        if GEMINI_AVAILABLE and self.api_key:
 
-        self.model = genai.GenerativeModel(
-            "gemini-2.5-flash"
+            try:
+
+                genai.configure(api_key=self.api_key)
+
+                self.model = genai.GenerativeModel(
+                    "gemini-2.5-flash"
+                )
+
+                self.available = True
+
+            except Exception:
+
+                self.available = False
+
+    # ------------------------------------
+
+    def local_scenario(self, role):
+
+        return random.choice(
+            SCENARIOS[role]
         )
 
-    # --------------------------------------------------
+    # ------------------------------------
 
-    def generate_scenario(self, player):
+    def ai_scenario(self, player):
 
         prompt = f"""
-You are the Game Master of LifeQuest AI.
 
-Player Role:
+Generate ONE realistic scenario.
+
+Role:
+
 {player.role}
 
-Player Level:
-{player.level}
+Stats:
 
-Player Stats:
 {player.stats}
 
-Generate ONE realistic life situation.
+Return JSON only.
 
-Return ONLY valid JSON.
-
-Format:
-
-{{
-"title":"",
-"story":"",
-"choices":[
-"",
-"",
-""
-],
-"effects":[
-{{}},
-{{}},
-{{}}
-]
-}}
-
-Rules:
-
-- Three choices only.
-- Every effect must change stats.
-
-Allowed stats:
-
-Health
-Money
-Knowledge
-Happiness
-Reputation
-Energy
-Experience
-
-Values should be between -20 and +20.
-
-Make it educational and realistic.
 """
 
-        response = self.model.generate_content(prompt)
+        try:
 
-        text = response.text.strip()
+            response = self.model.generate_content(prompt)
 
-        if text.startswith("```"):
-            text = text.replace("```json", "")
-            text = text.replace("```", "").strip()
+            text = response.text.strip()
 
-        return json.loads(text)
+            text = text.replace(
+                "```json",
+                ""
+            ).replace(
+                "```",
+                ""
+            )
+
+            return json.loads(text)
+
+        except Exception:
+
+            return None
+
+    # ------------------------------------
+
+    def generate(self, player):
+
+        if self.available:
+
+            scenario = self.ai_scenario(player)
+
+            if scenario:
+
+                return scenario
+
+        return self.local_scenario(
+            player.role
+        )
