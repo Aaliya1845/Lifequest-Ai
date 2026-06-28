@@ -5,6 +5,7 @@ Player Model
 
 from dataclasses import dataclass, field
 from typing import Dict, List
+from inventory import Inventory
 
 from config import DEFAULT_STATS, MAX_STAT, MIN_STAT
 
@@ -16,6 +17,8 @@ class Player:
 
     stats: Dict[str, int] = field(
         default_factory=lambda: DEFAULT_STATS.copy()
+        inventory: Inventory = field(default_factory=Inventory)
+        
     )
 
     level: int = 1
